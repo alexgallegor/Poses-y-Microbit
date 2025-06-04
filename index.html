@@ -550,13 +550,13 @@
                 
                 if ((now - lastSentTime) > SEND_INTERVAL) {
                     let command = "";
-                    if (bestClass === "izquierda") {
-                        command = "uno";
-                    } else if (bestClass === "derecha") {
-                        command = "dos";
-                    }
-                     else if (bestClass === "centro") {
+                    if (bestClass === "centro") {
                         command = "tres";
+                    } else if (bestClass === "izquierda") {
+                        command = "uno";
+                    }
+                     else if (bestClass === "derecha") {
+                        command = "dos";
                     }
                     
                     if (command) {
