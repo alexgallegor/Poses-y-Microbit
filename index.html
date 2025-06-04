@@ -544,7 +544,7 @@
             confidenceEl.style.color = `hsl(${bestProb * 120}, 100%, 60%)`;
             
             // Enviar comando si supera el umbral
-            if (bestProb > 0.70) {
+            if (bestProb > 0.80) {
                 const now = Date.now();
                 
                 if ((now - lastSentTime) > SEND_INTERVAL) {
@@ -553,6 +553,9 @@
                         command = "uno";
                     } else if (bestClass === "derecha") {
                         command = "dos";
+                    }
+                     else if (bestClass === "centro") {
+                        command = "tres";
                     }
                     
                     if (command) {
