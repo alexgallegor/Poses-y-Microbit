@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Micro:bit con Pose - Comandos Dinámicos</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        h3 {
+            font-size: 1.5rem;
+            color: #4facfe;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            min-width: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button.connected {
+            background: linear-gradient(to right, #00c853, #00e676);
+        }
+        
+        button.disconnected {
+            background: linear-gradient(to right, #ff5252, #ff7b7b);
+        }
+        
+        .status {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .status-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 200px;
+            text-align: center;
+            flex: 1;
+        }
+        
+        .status-box h4 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #4facfe;
+        }
+        
+        .status-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .camera-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .data-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #4facfe;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        canvas {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            width: 100%;
+            max-width: 400px;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        #label-container {
+            margin-top: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .prediction {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .prediction.active {
+            background: rgba(78, 172, 254, 0.3);
+            transform: scale(1.02);
+        }
+        
+        .prediction .name {
+            font-weight: bold;
+        }
+        
+        .prediction .value {
+            font-weight: bold;
+            color: #00f2fe;
+        }
+        
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .instructions h4 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #4facfe;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        
+        .log {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            height: 150px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-entry.sent {
+            color: #00f2fe;
+        }
+        
+        .log-entry.received {
+            color: #00e676;
+        }
+        
+        .log-entry.error {
+            color: #ff5252;
+        }
+        
+        .model-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .model-info h4 {
+            font-size: 1.2rem;
+            color: #4facfe;
+            margin-bottom: 10px;
+        }
+        
+        .model-info p {
+            word-break: break-all;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+        
+        .icon {
+            font-size: 1.5rem;
+        }
+        
+        .model-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .model-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border-radius: 50px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .model-input button {
+            min-width: auto;
+            padding: 10px 20px;
+        }
+        
+        .command-map {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .command-map h4 {
+            font-size: 1.2rem;
+            color: #4facfe;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .command-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .command-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Control Micro:bit con Pose</h1>
+            <h3>Comandos Dinámicos para Modelos Personalizados</h3>
+        </header>
+        
+        <div class="controls">
+            <button id="cameraBtn" onclick="startCamera()">
+                <span class="icon">📷</span> Activar Cámara
+            </button>
+            <button id="btBtn" onclick="connectBluetooth()">
+                <span class="icon">🔌</span> Conectar Bluetooth
+            </button>
+            <button id="modelBtn" onclick="showModelInput()">
+                <span class="icon">🔄</span> Cambiar Modelo
+            </button>
+        </div>
+        
+        <div class="model-info">
+            <h4>Modelo Actual</h4>
+            <p id="currentModel"> Ninguno </p>
+            <div id="modelInputContainer" class="model-input" style="display: none;">
+                <input type="text" id="modelUrlInput" placeholder="Introduce URL del modelo..." value="">
+                <button onclick="updateModel()">Actualizar</button>
+            </div>
+        </div>
+        
+        <div class="command-map" id="commandMap">
+            <h4>Asignación de Comandos</h4>
+            <div id="commandList">Cargando asignaciones...</div>
+        </div>
+        
+        <div class="status">
+            <div class="status-box">
+                <h4>Estado Bluetooth</h4>
+                <div id="btStatus" class="status-value">Desconectado</div>
+            </div>
+            <div class="status-box">
+                <h4>Último Comando</h4>
+                <div id="lastCommand" class="status-value">Ninguno</div>
+            </div>
+            <div class="status-box">
+                <h4>Confianza</h4>
+                <div id="confidence" class="status-value">0%</div>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="camera-section">
+                <div class="section-title">
+                    <span class="icon">🎥</span> Vista de Cámara
+                </div>
+                <canvas id="canvas"></canvas>
+                <div id="label-container"></div>
+            </div>
+            
+            <div class="data-section">
+                <div class="section-title">
+                    <span class="icon">📊</span> Datos de Predicción
+                </div>
+                <div id="predictions"></div>
+                
+                <div class="section-title" style="margin-top: 30px;">
+                    <span class="icon">📝</span> Registro de Eventos
+                </div>
+                <div class="log" id="log"></div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h4>Instrucciones de Uso:</h4>
+            <ul>
+                <li>Haz clic en "Activar Cámara" para comenzar el reconocimiento de poses</li>
+                <li>Conecta tu micro:bit mediante Bluetooth</li>
+                <li>Realiza poses frente a la cámara para enviar comandos</li>
+                <li>Cada pose detectada enviará un comando secuencial ("uno", "dos", "tres", etc.)</li>
+                <li>Usa "Cambiar Modelo" para utilizar tu propio modelo entrenado</li>
+                <li>El sistema se adapta automáticamente al número de clases en el modelo</li>
+            </ul>
+            <p><strong>Nota:</strong> Necesitas un navegador que soporte Web Bluetooth (Chrome, Edge)</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+
+    <script type="text/javascript">
+        // Variable para la URL del modelo (ahora modificable)
+        let MODEL_URL = "";
+        
+        // Elementos del DOM
+        const cameraBtn = document.getElementById('cameraBtn');
+        const btBtn = document.getElementById('btBtn');
+        const modelBtn = document.getElementById('modelBtn');
+        const btStatus = document.getElementById('btStatus');
+        const lastCommand = document.getElementById('lastCommand');
+        const confidenceEl = document.getElementById('confidence');
+        const predictionsContainer = document.getElementById('predictions');
+        const logContainer = document.getElementById('log');
+        const currentModelEl = document.getElementById('currentModel');
+        const modelUrlInput = document.getElementById('modelUrlInput');
+        const modelInputContainer = document.getElementById('modelInputContainer');
+        const commandListEl = document.getElementById('commandList');
+        
+        // Variables de estado
+        let lastSentClass = "";
+        let lastSentTime = 0;
+        const SEND_INTERVAL = 1000; // milisegundos entre envíos
+        let model, webcam, ctx, labelContainer, maxPredictions;
+        let bluetoothDevice, uartTX;
+        let isBluetoothConnected = false;
+        let isCameraActive = false;
+        let classLabels = [];
+        let commandMapping = {};
+        
+        // UUIDs para el servicio UART
+        const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const UART_TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // micro:bit → navegador
+        const UART_RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // navegador → micro:bit
+        
+        // Función para añadir entradas al registro
+        function addLogEntry(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        // Función para actualizar estado Bluetooth
+        function updateBTStatus(connected) {
+            isBluetoothConnected = connected;
+            btStatus.textContent = connected ? "Conectado" : "Desconectado";
+            btStatus.style.color = connected ? "#00f2fe" : "#ff5252";
+            
+            if (connected) {
+                btBtn.classList.add('connected');
+                btBtn.innerHTML = '<span class="icon">✅</span> Bluetooth Conectado';
+            } else {
+                btBtn.classList.remove('connected');
+                btBtn.innerHTML = '<span class="icon">🔌</span> Conectar Bluetooth';
+            }
+        }
+        
+        // Mostrar/ocultar el campo de entrada para el modelo
+        function showModelInput() {
+            const isVisible = modelInputContainer.style.display === 'flex';
+            modelInputContainer.style.display = isVisible ? 'none' : 'flex';
+        }
+        
+        // Actualizar el modelo con la nueva URL
+        function updateModel() {
+            const newUrl = modelUrlInput.value.trim();
+            
+            if (!newUrl) {
+                addLogEntry("Por favor, introduce una URL válida", 'error');
+                return;
+            }
+            
+            // Verificar que la URL termina con '/'
+            const formattedUrl = newUrl.endsWith('/') ? newUrl : newUrl + '/';
+            
+            MODEL_URL = formattedUrl;
+            currentModelEl.textContent = formattedUrl;
+            addLogEntry(`Modelo actualizado a: ${formattedUrl}`, 'received');
+            
+            // Si la cámara está activa, reiniciarla con el nuevo modelo
+            if (isCameraActive) {
+                addLogEntry("Reiniciando cámara con nuevo modelo...", 'info');
+                stopCamera();
+                startCamera();
+            }
+            
+            // Ocultar el campo de entrada
+            modelInputContainer.style.display = 'none';
+        }
+        
+        // Detener la cámara
+        function stopCamera() {
+            if (webcam) {
+                webcam.stop();
+                isCameraActive = false;
+                cameraBtn.innerHTML = '<span class="icon">📷</span> Activar Cámara';
+            }
+        }
+        
+        // Conexión Bluetooth
+        async function connectBluetooth() {
+            window.bluetoothDevice = bluetoothDevice;
+
+            if (isBluetoothConnected) {
+                addLogEntry("Ya está conectado al Micro:bit.", 'info');
+                return;
+            }
+            
+            try {
+                addLogEntry("Buscando dispositivo Micro:bit...", 'info');
+                
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: "BBC micro:bit" }],
+                    optionalServices: [UART_SERVICE_UUID]
+                });
+                
+                addLogEntry(`Dispositivo encontrado: ${bluetoothDevice.name}`, 'info');
+                addLogEntry("Conectando...", 'info');
+                
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService(UART_SERVICE_UUID);
+                uartTX = await service.getCharacteristic(UART_TX_UUID);
+                
+                updateBTStatus(true);
+                addLogEntry("Bluetooth conectado correctamente", 'received');
+                
+                bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+                    updateBTStatus(false);
+                    addLogEntry("Micro:bit desconectado", 'error');
+                });
+            } catch (error) {
+                console.error("Error al conectar Bluetooth:", error);
+                addLogEntry(`Error al conectar: ${error.message}`, 'error');
+                updateBTStatus(false);
+            }
+        }
+        
+        // Enviar datos a micro:bit
+        async function sendToMicrobit(text) {
+            if (!isBluetoothConnected || !uartTX) {
+                addLogEntry("Bluetooth no conectado o característica TX no disponible", 'error');
+                return;
+            }
+            
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text + "\n");
+                
+                await uartTX.writeValueWithoutResponse(data);
+                
+                lastCommand.textContent = text;
+                addLogEntry(`Enviado a micro:bit: "${text}"`, 'sent');
+            } catch (error) {
+                console.error("Error enviando:", error);
+                addLogEntry(`Error al enviar: ${error.message}`, 'error');
+
+                if (error.message.includes("disconnected") || error.message.includes("NotConnectedError")) {
+                    updateBTStatus(false);
+                }
+            }
+        }
+        
+        // Crear mapeo de comandos
+        function createCommandMapping(labels) {
+            commandMapping = {};
+            const spanishNumbers = [
+                "uno", "dos", "tres", "cuatro", "cinco", 
+                "seis", "siete", "ocho", "nueve", "diez",
+                "once", "doce", "trece", "catorce", "quince"
+            ];
+            
+            // Actualizar la lista de comandos en la UI
+            commandListEl.innerHTML = '';
+            
+            labels.forEach((label, index) => {
+                const command = index < spanishNumbers.length ? 
+                    spanishNumbers[index] : 
+                    (index + 1).toString();
+                
+                commandMapping[label] = command;
+                
+                // Crear elemento para mostrar el mapeo
+                const commandItem = document.createElement('div');
+                commandItem.className = 'command-item';
+                commandItem.innerHTML = `
+                    <span>${label}:</span>
+                    <strong>${command}</strong>
+                `;
+                commandListEl.appendChild(commandItem);
+            });
+            
+            addLogEntry(`Mapeo de comandos creado para ${labels.length} clases`, 'info');
+        }
+        
+        // Iniciar cámara
+        async function startCamera() {
+            if (isCameraActive) {
+                addLogEntry("La cámara ya está activa", 'info');
+                return;
+            }
+            
+            cameraBtn.innerHTML = '<span class="icon">⏳</span> Iniciando cámara...';
+            
+            const modelURL = MODEL_URL + "model.json";
+            const metadataURL = MODEL_URL + "metadata.json";
+            
+            try {
+                model = await tmPose.load(modelURL, metadataURL);
+                maxPredictions = model.getTotalClasses();
+                
+                // Obtener etiquetas de clase y crear mapeo de comandos
+                classLabels = model.getClassLabels();
+                createCommandMapping(classLabels);
+                
+                const size = 400;
+                const flip = true;
+                webcam = new tmPose.Webcam(size, size, flip);
+                
+                await webcam.setup();
+                await webcam.play();
+                
+                const canvas = document.getElementById("canvas");
+                canvas.width = size;
+                canvas.height = size;
+                ctx = canvas.getContext("2d");
+                
+                // Crear contenedores para predicciones
+                predictionsContainer.innerHTML = '';
+                for (let i = 0; i < maxPredictions; i++) {
+                    const predictionEl = document.createElement('div');
+                    predictionEl.className = 'prediction';
+                    predictionEl.innerHTML = `
+                        <div class="name">${classLabels[i]}:</div>
+                        <div class="value">0.00</div>
+                    `;
+                    predictionsContainer.appendChild(predictionEl);
+                }
+                
+                isCameraActive = true;
+                cameraBtn.innerHTML = '<span class="icon">📷</span> Cámara Activa';
+                addLogEntry("Cámara iniciada correctamente", 'received');
+                
+                // Iniciar bucle de predicción
+                loop();
+            } catch (e) {
+                console.error(e);
+                addLogEntry(`Error al iniciar cámara: ${e.message}`, 'error');
+                cameraBtn.innerHTML = '<span class="icon">📷</span> Activar Cámara';
+            }
+        }
+        
+        // Bucle principal
+        async function loop() {
+            if (!isCameraActive) return;
+
+            webcam.update();
+            await predict();
+            await new Promise(r => setTimeout(r, 50));
+            window.requestAnimationFrame(loop);
+        }
+        
+        // Realizar predicción
+        async function predict() {
+            const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
+            const prediction = await model.predict(posenetOutput);
+            
+            let bestClass = "";
+            let bestProb = 0;
+            const predictionElements = predictionsContainer.querySelectorAll('.prediction');
+            
+            for (let i = 0; i < maxPredictions; i++) {
+                const className = prediction[i].className;
+                const prob = prediction[i].probability;
+                
+                // Actualizar UI
+                predictionElements[i].innerHTML = `
+                    <div class="name">${className}:</div>
+                    <div class="value">${prob.toFixed(2)}</div>
+                `;
+                
+                // Resaltar predicción activa
+                predictionElements[i].classList.remove('active');
+                if (prob > bestProb) {
+                    bestProb = prob;
+                    bestClass = className;
+                }
+            }
+            
+            // Actualizar confianza en UI
+            confidenceEl.textContent = `${(bestProb * 100).toFixed(1)}%`;
+            confidenceEl.style.color = `hsl(${bestProb * 120}, 100%, 60%)`;
+            
+            // Enviar comando si supera el umbral
+            if (bestProb > 0.90) {
+                const now = Date.now();
+                
+                if ((now - lastSentTime) > SEND_INTERVAL) {
+                    let command = "";
+                    
+                    // Obtener el comando asignado a esta clase
+                    
+                    if (commandMapping[bestClass]) {
+                        command = commandMapping[bestClass];
+                    }
+                    
+                    if (command) {
+                        await sendToMicrobit(command);
+                        lastSentClass = bestClass;
+                        lastSentTime = now;
+                        
+                        // Resaltar la predicción activa
+                        predictionElements.forEach((el, index) => {
+                            if (prediction[index].className === bestClass) {
+                                el.classList.add('active');
+                            }
+                        });
+                    }
+                }
+            } else {
+                lastSentClass = "";
+            }
+            
+            // Dibujar pose
+            drawPose(pose);
+        }
+        
+        // Dibujar pose en el canvas
+        function drawPose(pose) {
+            if (webcam.canvas) {
+                ctx.drawImage(webcam.canvas, 0, 0);
+                if (pose) {
+                    const minPartConfidence = 0.5;
+                    tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
+                    tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
+                }
+            }
+        }
+        
+        // Inicializar estado
+        updateBTStatus(false);
+        addLogEntry("Aplicación iniciada. Activa la cámara y conecta Bluetooth para comenzar.", 'info');
+    </script>
+</body>
+</html>
