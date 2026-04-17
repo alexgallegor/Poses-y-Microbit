@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control Micro:bit con Pose - Compacto</title>
+  <style>
+    :root {
+      --bg1: #10225f;
+      --bg2: #7b1620;
+      --panel: rgba(7, 11, 26, 0.78);
+      --panel-soft: rgba(255, 255, 255, 0.08);
+      --line: rgba(255, 255, 255, 0.1);
+      --text: #f5f8ff;
+      --muted: #b9c6ea;
+      --accent: #4facfe;
+      --accent-2: #00f2fe;
+      --ok: #00e676;
+      --error: #ff6b6b;
+      --shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--bg1), var(--bg2), var(--bg1));
+      color: var(--text);
+      padding: 10px;
+    }
+
+    .container {
+      width: min(1480px, 100%);
+      height: calc(100vh - 20px);
+      margin: 0 auto;
+      background: var(--panel);
+      border-radius: 22px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .panel {
+      background: var(--panel-soft);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 12px;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 12px;
+      align-items: stretch;
+      min-height: 0;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 4px;
+    }
+
+    h1 {
+      font-size: clamp(1.6rem, 2.4vw, 2.3rem);
+      line-height: 1.05;
+      background: linear-gradient(to right, var(--accent), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 4px rgba(0,0,0,.35);
+    }
+
+    h3 {
+      font-size: 0.98rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .actions-wrap {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      align-content: center;
+    }
+
+    button {
+      background: linear-gradient(to right, var(--accent), var(--accent-2));
+      color: white;
+      border: none;
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-width: 0;
+      white-space: nowrap;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+    button.connected { background: linear-gradient(to right, #00c853, #00e676); }
+    button.disconnected { background: linear-gradient(to right, #ff5252, #ff7b7b); }
+
+    .icon { font-size: 1.1rem; }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1.25fr 1fr;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .left-summary {
+      display: grid;
+      grid-template-columns: 1.2fr .9fr;
+      gap: 12px;
+      min-height: 0;
+    }
+
+    .status {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      min-height: 0;
+    }
+
+    .status-box h4,
+    .model-info h4,
+    .command-map h4,
+    .section-title,
+    .instructions h4 {
+      color: var(--accent);
+      font-size: .92rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-box {
+      background: rgba(255,255,255,.06);
+      border-radius: 14px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      min-height: 0;
+    }
+
+    .status-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+    }
+
+    .model-info,
+    .command-map,
+    .instructions {
+      height: 100%;
+    }
+
+    .model-info p {
+      word-break: break-word;
+      font-size: .84rem;
+      color: var(--text);
+      opacity: .9;
+      margin-bottom: 8px;
+    }
+
+    .model-input {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .model-input input {
+      flex: 1;
+      min-width: 0;
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.08);
+      color: white;
+      font-size: .9rem;
+      outline: none;
+    }
+
+    .model-input button {
+      padding-inline: 14px;
+      min-width: auto;
+    }
+
+    .command-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      max-height: 100%;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .command-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 9px;
+      background: rgba(255,255,255,.05);
+      border-radius: 10px;
+      font-size: .82rem;
+    }
+
+    .main {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1.02fr .98fr .78fr;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .camera-section,
+    .predictions-section,
+    .side-column {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .camera-frame {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.32);
+      border-radius: 14px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    canvas {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
+      width: min(100%, 100%);
+      max-width: min(100%, 420px);
+      max-height: 100%;
+      aspect-ratio: 1 / 1;
+      display: block;
+      margin: 0 auto;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    #label-container {
+      display: none;
+    }
+
+    #predictions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+      overflow: auto;
+      padding-right: 2px;
+      min-height: 0;
+    }
+
+    .prediction {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      transition: all 0.25s ease;
+      font-size: .9rem;
+    }
+
+    .prediction.active {
+      background: rgba(78, 172, 254, 0.26);
+      transform: scale(1.01);
+    }
+
+    .prediction .name { font-weight: 600; }
+    .prediction .value { font-weight: 700; color: var(--accent-2); }
+
+    .log {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.34);
+      border-radius: 14px;
+      padding: 10px;
+      font-family: monospace;
+      border: 1px solid var(--line);
+    }
+
+    .log-entry {
+      margin-bottom: 6px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,.05);
+      font-size: .8rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .log-entry.sent { color: var(--accent-2); }
+    .log-entry.received { color: var(--ok); }
+    .log-entry.error { color: var(--error); }
+
+    .instructions ul {
+      padding-left: 18px;
+      display: grid;
+      gap: 4px;
+      font-size: .82rem;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+
+    .instructions p {
+      margin-top: 8px;
+      font-size: .78rem;
+      color: var(--text);
+      opacity: .92;
+    }
+
+    .side-column .panel {
+      flex: 1;
+      min-height: 0;
+    }
+
+    .compact-note {
+      font-size: .76rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    @media (max-width: 1200px) {
+      html, body { overflow: auto; }
+      body { padding: 8px; }
+      .container {
+        height: auto;
+        min-height: calc(100vh - 16px);
+        overflow: visible;
+      }
+      .topbar,
+      .summary,
+      .left-summary,
+      .main {
+        grid-template-columns: 1fr;
+      }
+      .actions-wrap,
+      .status,
+      .command-list {
+        grid-template-columns: 1fr;
+      }
+      .main,
+      .camera-section,
+      .predictions-section,
+      .side-column,
+      .side-column .panel {
+        overflow: visible;
+      }
+      .log,
+      #predictions { max-height: 280px; }
+    }
+
+    @media (max-width: 680px) {
+      h1 { font-size: 1.45rem; }
+      h3 { font-size: .88rem; }
+      button { font-size: .88rem; }
+      .container { padding: 10px; gap: 10px; }
+      .panel { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar panel">
+      <div class="brand">
+        <h1>Control Micro:bit con Pose</h1>
+        <h3>Comandos dinámicos para modelos personalizados</h3>
+      </div>
+      <div class="actions-wrap">
+        <button id="cameraBtn" onclick="startCamera()">
+          <span class="icon">📷</span> Activar Cámara
+        </button>
+        <button id="btBtn" onclick="connectBluetooth()">
+          <span class="icon">🔌</span> Conectar Bluetooth
+        </button>
+        <button id="modelBtn" onclick="showModelInput()">
+          <span class="icon">🔄</span> Cambiar Modelo
+        </button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="left-summary">
+        <div class="panel status">
+          <div class="status-box">
+            <h4>Estado Bluetooth</h4>
+            <div id="btStatus" class="status-value">Desconectado</div>
+          </div>
+          <div class="status-box">
+            <h4>Último comando</h4>
+            <div id="lastCommand" class="status-value">Ninguno</div>
+          </div>
+          <div class="status-box">
+            <h4>Confianza</h4>
+            <div id="confidence" class="status-value">0%</div>
+          </div>
+        </div>
+
+        <div class="panel model-info">
+          <h4>Modelo actual</h4>
+          <p id="currentModel">Ninguno</p>
+          <div id="modelInputContainer" class="model-input" style="display:none;">
+            <input type="text" id="modelUrlInput" placeholder="Introduce URL del modelo..." value="" />
+            <button onclick="updateModel()">Actualizar</button>
+          </div>
+          <div class="compact-note">Panel reducido para mantener toda la interfaz visible.</div>
+        </div>
+      </div>
+
+      <div class="panel command-map" id="commandMap">
+        <h4>Asignación de comandos</h4>
+        <div id="commandList" class="command-list">Cargando asignaciones...</div>
+      </div>
+    </div>
+
+    <div class="main">
+      <div class="panel camera-section">
+        <div class="section-title"><span class="icon">🎥</span> Vista de cámara</div>
+        <div class="camera-frame">
+          <canvas id="canvas"></canvas>
+        </div>
+        <div id="label-container"></div>
+      </div>
+
+      <div class="panel predictions-section">
+        <div class="section-title"><span class="icon">📊</span> Datos de predicción</div>
+        <div id="predictions"></div>
+      </div>
+
+      <div class="side-column">
+        <div class="panel">
+          <div class="section-title"><span class="icon">📝</span> Registro</div>
+          <div class="log" id="log"></div>
+        </div>
+
+        <div class="panel instructions">
+          <h4>Uso rápido</h4>
+          <ul>
+            <li>Activa cámara para reconocer poses.</li>
+            <li>Conecta la micro:bit por Bluetooth.</li>
+            <li>Las poses envían comandos secuenciales.</li>
+            <li>Puedes cambiar a tu propio modelo.</li>
+            <li>Necesitas Chrome o Edge con Web Bluetooth.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+
+  <script type="text/javascript">
+    let MODEL_URL = "";
+
+    const cameraBtn = document.getElementById('cameraBtn');
+    const btBtn = document.getElementById('btBtn');
+    const modelBtn = document.getElementById('modelBtn');
+    const btStatus = document.getElementById('btStatus');
+    const lastCommand = document.getElementById('lastCommand');
+    const confidenceEl = document.getElementById('confidence');
+    const predictionsContainer = document.getElementById('predictions');
+    const logContainer = document.getElementById('log');
+    const currentModelEl = document.getElementById('currentModel');
+    const modelUrlInput = document.getElementById('modelUrlInput');
+    const modelInputContainer = document.getElementById('modelInputContainer');
+    const commandListEl = document.getElementById('commandList');
+
+    let lastSentClass = "";
+    let lastSentTime = 0;
+    const SEND_INTERVAL = 1000;
+    let model, webcam, ctx, labelContainer, maxPredictions;
+    let bluetoothDevice, uartTX;
+    let isBluetoothConnected = false;
+    let isCameraActive = false;
+    let classLabels = [];
+    let commandMapping = {};
+
+    const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+    const UART_TX_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+    const UART_RX_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+
+    function addLogEntry(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function updateBTStatus(connected) {
+      isBluetoothConnected = connected;
+      btStatus.textContent = connected ? 'Conectado' : 'Desconectado';
+      btStatus.style.color = connected ? '#00f2fe' : '#ff6b6b';
+
+      if (connected) {
+        btBtn.classList.add('connected');
+        btBtn.innerHTML = '<span class="icon">✅</span> Bluetooth Conectado';
+      } else {
+        btBtn.classList.remove('connected');
+        btBtn.innerHTML = '<span class="icon">🔌</span> Conectar Bluetooth';
+      }
+    }
+
+    function showModelInput() {
+      const isVisible = modelInputContainer.style.display === 'flex';
+      modelInputContainer.style.display = isVisible ? 'none' : 'flex';
+    }
+
+    function updateModel() {
+      const newUrl = modelUrlInput.value.trim();
+
+      if (!newUrl) {
+        addLogEntry('Por favor, introduce una URL válida', 'error');
+        return;
+      }
+
+      const formattedUrl = newUrl.endsWith('/') ? newUrl : newUrl + '/';
+      MODEL_URL = formattedUrl;
+      currentModelEl.textContent = formattedUrl;
+      addLogEntry(`Modelo actualizado a: ${formattedUrl}`, 'received');
+
+      if (isCameraActive) {
+        addLogEntry('Reiniciando cámara con nuevo modelo...', 'info');
+        stopCamera();
+        startCamera();
+      }
+
+      modelInputContainer.style.display = 'none';
+    }
+
+    function stopCamera() {
+      if (webcam) {
+        webcam.stop();
+        isCameraActive = false;
+        cameraBtn.innerHTML = '<span class="icon">📷</span> Activar Cámara';
+      }
+    }
+
+    async function connectBluetooth() {
+      window.bluetoothDevice = bluetoothDevice;
+
+      if (isBluetoothConnected) {
+        addLogEntry('Ya está conectado al Micro:bit.', 'info');
+        return;
+      }
+
+      try {
+        addLogEntry('Buscando dispositivo Micro:bit...', 'info');
+
+        bluetoothDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ namePrefix: 'BBC micro:bit' }],
+          optionalServices: [UART_SERVICE_UUID]
+        });
+
+        addLogEntry(`Dispositivo encontrado: ${bluetoothDevice.name}`, 'info');
+        addLogEntry('Conectando...', 'info');
+
+        const server = await bluetoothDevice.gatt.connect();
+        const service = await server.getPrimaryService(UART_SERVICE_UUID);
+        uartTX = await service.getCharacteristic(UART_TX_UUID);
+
+        updateBTStatus(true);
+        addLogEntry('Bluetooth conectado correctamente', 'received');
+
+        bluetoothDevice.addEventListener('gattserverdisconnected', () => {
+          updateBTStatus(false);
+          addLogEntry('Micro:bit desconectado', 'error');
+        });
+      } catch (error) {
+        console.error('Error al conectar Bluetooth:', error);
+        addLogEntry(`Error al conectar: ${error.message}`, 'error');
+        updateBTStatus(false);
+      }
+    }
+
+    async function sendToMicrobit(text) {
+      if (!isBluetoothConnected || !uartTX) {
+        addLogEntry('Bluetooth no conectado o característica TX no disponible', 'error');
+        return;
+      }
+
+      try {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text + '\n');
+        await uartTX.writeValueWithoutResponse(data);
+        lastCommand.textContent = text;
+        addLogEntry(`Enviado a micro:bit: "${text}"`, 'sent');
+      } catch (error) {
+        console.error('Error enviando:', error);
+        addLogEntry(`Error al enviar: ${error.message}`, 'error');
+
+        if (error.message.includes('disconnected') || error.message.includes('NotConnectedError')) {
+          updateBTStatus(false);
+        }
+      }
+    }
+
+    function createCommandMapping(labels) {
+      commandMapping = {};
+      const spanishNumbers = [
+        'uno', 'dos', 'tres', 'cuatro', 'cinco',
+        'seis', 'siete', 'ocho', 'nueve', 'diez',
+        'once', 'doce', 'trece', 'catorce', 'quince'
+      ];
+
+      commandListEl.innerHTML = '';
+
+      labels.forEach((label, index) => {
+        const command = index < spanishNumbers.length ? spanishNumbers[index] : (index + 1).toString();
+        commandMapping[label] = command;
+
+        const commandItem = document.createElement('div');
+        commandItem.className = 'command-item';
+        commandItem.innerHTML = `
+          <span>${label}</span>
+          <strong>${command}</strong>
+        `;
+        commandListEl.appendChild(commandItem);
+      });
+
+      addLogEntry(`Mapeo de comandos creado para ${labels.length} clases`, 'info');
+    }
+
+    async function startCamera() {
+      if (isCameraActive) {
+        addLogEntry('La cámara ya está activa', 'info');
+        return;
+      }
+
+      cameraBtn.innerHTML = '<span class="icon">⏳</span> Iniciando cámara...';
+
+      const modelURL = MODEL_URL + 'model.json';
+      const metadataURL = MODEL_URL + 'metadata.json';
+
+      try {
+        model = await tmPose.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+        classLabels = model.getClassLabels();
+        createCommandMapping(classLabels);
+
+        const size = 400;
+        const flip = true;
+        webcam = new tmPose.Webcam(size, size, flip);
+
+        await webcam.setup();
+        await webcam.play();
+
+        const canvas = document.getElementById('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        ctx = canvas.getContext('2d');
+
+        predictionsContainer.innerHTML = '';
+        for (let i = 0; i < maxPredictions; i++) {
+          const predictionEl = document.createElement('div');
+          predictionEl.className = 'prediction';
+          predictionEl.innerHTML = `
+            <div class="name">${classLabels[i]}:</div>
+            <div class="value">0.00</div>
+          `;
+          predictionsContainer.appendChild(predictionEl);
+        }
+
+        isCameraActive = true;
+        cameraBtn.innerHTML = '<span class="icon">📷</span> Cámara Activa';
+        addLogEntry('Cámara iniciada correctamente', 'received');
+        loop();
+      } catch (e) {
+        console.error(e);
+        addLogEntry(`Error al iniciar cámara: ${e.message}`, 'error');
+        cameraBtn.innerHTML = '<span class="icon">📷</span> Activar Cámara';
+      }
+    }
+
+    async function loop() {
+      if (!isCameraActive) return;
+      webcam.update();
+      await predict();
+      await new Promise(r => setTimeout(r, 50));
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
+      const prediction = await model.predict(posenetOutput);
+
+      let bestClass = '';
+      let bestProb = 0;
+      const predictionElements = predictionsContainer.querySelectorAll('.prediction');
+
+      for (let i = 0; i < maxPredictions; i++) {
+        const className = prediction[i].className;
+        const prob = prediction[i].probability;
+
+        predictionElements[i].innerHTML = `
+          <div class="name">${className}:</div>
+          <div class="value">${prob.toFixed(2)}</div>
+        `;
+
+        predictionElements[i].classList.remove('active');
+        if (prob > bestProb) {
+          bestProb = prob;
+          bestClass = className;
+        }
+      }
+
+      confidenceEl.textContent = `${(bestProb * 100).toFixed(1)}%`;
+      confidenceEl.style.color = `hsl(${bestProb * 120}, 100%, 60%)`;
+
+      if (bestProb > 0.9) {
+        const now = Date.now();
+        if ((now - lastSentTime) > SEND_INTERVAL) {
+          let command = '';
+          if (commandMapping[bestClass]) command = commandMapping[bestClass];
+
+          if (command) {
+            await sendToMicrobit(command);
+            lastSentClass = bestClass;
+            lastSentTime = now;
+
+            predictionElements.forEach((el, index) => {
+              if (prediction[index].className === bestClass) {
+                el.classList.add('active');
+              }
+            });
+          }
+        }
+      } else {
+        lastSentClass = '';
+      }
+
+      drawPose(pose);
+    }
+
+    function drawPose(pose) {
+      if (webcam.canvas) {
+        ctx.drawImage(webcam.canvas, 0, 0);
+        if (pose) {
+          const minPartConfidence = 0.5;
+          tmPose.drawKeypoints(pose.keypoints, minPartConfidence, ctx);
+          tmPose.drawSkeleton(pose.keypoints, minPartConfidence, ctx);
+        }
+      }
+    }
+
+    updateBTStatus(false);
+    addLogEntry('Aplicación iniciada. Activa la cámara y conecta Bluetooth para comenzar.', 'info');
+  </script>
+</body>
+</html>
